@@ -1,265 +1,182 @@
-# Assignment 1 - Computer Vision: Object Detection for Autonomous Driving
+# Computer Vision: Object Detection for Autonomous Driving
 
-In this assignment, you will develop an object detection system for autonomous driving. You are required to **implement a simple detection network** called *HKUMMDetector (Naïve Version)* with ResNet as Backbone and YOLO as detection head. Through this assignment, you are expected to learn about designing and optimizing an object detection network.
+This project investigates techniques for improving the detection performance of an autonomous driving detection system. The study systematically adjusts training epochs, batch size, and input image size on the ResNet network and compares and explains these parameters. Results demonstrate that ResNet101 outperforms ResNet50 and increasing the image size can significantly improve mean average precision. Additionally, suitable batch sizes must be selected to balance time and performance, and a suitable number of epochs should be chosen based on practical situations to achieve optimal performance. The findings provide valuable guidance for the study and practice of autonomous driving, and suggest the need for further exploration of other factors that affect object detection performance to propose more efficient and accurate system design methods.
 
-**Github Link: [https://github.com/Liang-ZX/HKU-DASC7606-A1](https://github.com/Liang-ZX/HKU-DASC7606-A1)**  
-**PDF File: [Problem-Description.pdf](Problem-Description.pdf)**  
-*(New)* **Q&A Document: [Q&A with Some Introductory Material](https://connecthkuhk-my.sharepoint.com/:w:/g/personal/liangzx_connect_hku_hk/ESWf67SRY4FIgwSD_1rl4ioBANK7Qpcyd5jeHtd605_apw?e=jHy6jT)**  
-**Authors (TAs): Zhixuan Liang, Haibao Yu**  
-**Date: 2022.12**
+## 1. Introduction
+[**ResNet**](https://arxiv.org/abs/1512.03385) and [**YOLO**](https://arxiv.org/abs/1506.02640) are popular algorithms in autonomous driving detection systems, with ResNet solving the issue of gradient vanishing and YOLO providing fast and accurate real-time object detection. 
 
-This codebase is only for HKU DASC 7606 (2022-2023) course. Please **don't upload your answers or this codebase** to **any** public platforms (e.g., Github) before permitted. All rights reserved.
+Recent studies have focused on combining these two methods to improve detection performance[1], with adjustments to training epochs, batch size, and image size showing promise in enhancing system capabilities for detecting small objects[2]. Our report aims to investigate these techniques to optimize detection performance.
 
-## 1. Problem Description and Assignment Objectives
-### 1.1 What is Object Detection for Autonomous Driving?
-Object detection is one of the most essential tasks in autonomous driving. 
-This task aims to recognize and localize traffic participants, like cars in the road scene, from images or point clouds. This assignment focuses on solving the detection problem from a single image.
+
+## 2. Experiment
+### 2.1 Experimental data
+This 2D image dataset for autonomous driving object detection is created by HUAWEI and contains 5K labeled training images, 2.5K labeled validation images, and 2.5K images with hidden annotations. It consists of 5 classes: 'Pedestrian', 'Cyclist', 'Car', 'Truck', and 'Tram', with their distribution depicted in a figure.
+
 <!-- ![image](resources/image.png) -->
 <div align="center">
-  <img src="./resources/demo.jpg" height="300">
+  <img src="./resources/table1.jpg" height="300">
 </div>
 <p align="center">
-  Figure 1. A Visualization Example of Object Detection for Autonomous Driving.
+  Table 1. Distribution of Classes in Training and Validation Sets.
 </p>
 
+It is clear that the training and validation data sets show an uneven distribution, with over 50% of the data in the 'car' category and only 4% in the 'tram' category. This results that in the subsequent target detection, the detection performance (AP) for 'car' is better and for 'tram' is poorer , which is mainly attributed to the data distribution rather than the detection model itself.
 
-### 1.2 What will you learn from this assignment?
+Upon examining the images provided by the dataset, it was observed that the majority of the detection targets in the images are relatively small, with fewer large objects present. This observation can have implications on the selection of parameters in the subsequent object detection process, such as avoiding excessive down sampling.
 
-- Understand the basic theories of Deep Learning exspecially for object detection task, such as the networks of [**ResNet**](https://arxiv.org/abs/1512.03385) and [**YOLO v1**](https://arxiv.org/abs/1506.02640), the detection loss function, and important concepts of object detection (e.g. **ROC Curve and Mean AP**).
-- Apply object detection algorithm to solving **autonomous driving problem**, such as detecting cars and pedestrians in the traffic environment.
-- Gain experience of implementing neural networks with a popular deep learning framework [**PyTorch**](https://pytorch.org/).
-- Develop a deep learning system **from scratch**, including **network design, model training, hyperparameter tuning, training visualization, model inference and performance evaluation.**
-- *Spontaneously and deeply explore advanced solutions for object detection task. (Italics indicate bonus requirements, the same below.)*
+### 2.2 Experimental Setting
 
-### 1.3 What should you prepare for this assignment?
-
-- Master the basic use of Python and Pytorch.
-- Be familiar with the [**ResNet**](https://arxiv.org/abs/1512.03385).
-- Be familiar with the [**YOLO v1**](https://arxiv.org/abs/1506.02640).
-
-（You can learn about them step by step in the process of completing this assignment.）
-
-## 2. Assignment Tasks
-
-- You must fill in the blanks and submit the completed codes for this assignment with the provided codebase. This assignment offers an incomplete codebase for object detection with modified [**YOLO v1**](https://arxiv.org/abs/1506.02640). 
-
-+ You must submit the test data's model outputs with your completed codes. **Now the test data has been released [here](https://drive.google.com/file/d/1-I1Rp1VrF4S5hx9_X3MUL50C10Ph1Tqe/view).** You should utilize hyperparameter tuning and other widely-used techniques to improve detection performance.
-
-- You must submit a maximum of 6-page technique report to explain how you improve the object detection performance. Besides, some visualization results (e.g., loss curve) are encouraged in this report.
-
-```shell
-# Download this project
-git clone https://github.com/Liang-ZX/HKU-DASC7606-A1.git
-cd HKU-DASC7606-A1
-```
-
-### 2.0 Dataset Preparation
-The dataset is available [here](https://drive.google.com/file/d/1WhC8AsloaEUipGCQQncYir9Q-Kb9meTC/view?usp=sharing).
-The dataset is composed of train, val, test parts and their corresponding annotations.
-Please refer to [src/data/README.md](./src/data/README.md) for the dataset strcuture explanation.
-
-For your convenience, you can download the dataset through the following command.
-```shell
-cd src
-chmod +x data/download2.sh
-./data/download2.sh
-```
-
-
-### 2.1 Submit the Completed Codebase
-
-The codebase [src](./src) is organized as followings.
-
-```
-└── src
-    ├── data
-    │   ├── dataset.py      # dataloader
-    │   └── download.sh     # script to download dataset
-    ├── model
-    │   ├── block.py        # backbone
-    │   ├── head.py         # detection head
-    │   └── hkudetector.py  # object detection network
-    ├── utils
-    │   ├── loss.py
-    │   └── util.py
-    ├── train.py            # model training
-    ├── predict.py          # model inference
-    └── eval.py             # performance evaluation
-```
-
-#### Task 1: Filling in the Backbone with ResNet
-You should fill in two blanks in file [src/model/block.py](src/model/block.py) to complete the basic blocks of backbone network, including the block design and forward function.
-You should try to apply the ResNet into the Backbone.
-The ResNet architecture is as the following.
-<!-- ![image](resources/image.png) -->
+Our experiment design comprised variations in backbone network, epoch number, batch size, and image size, with the aim of providing insights into the optimal configuration for achieving optimal object detection performance.
 
 <div align="center">
-  <img src="./resources/resnet_arch.png" height="200">
+
+| Different Techniques | Setting                |
+|----------------------|------------------------|
+| Backbone Networks    | ResNet50 and ResNet101 |
+| Epochs               | 24 and 48              |
+| Batch Sizes          | 12, 16, 24, and 32     |
+| Image Sizes          | 448, 512, and 640      |
+
 </div>
+
 <p align="center">
-  Figure 2. A Visualization Illustration of Basic Block and Bottleneck Block in ResNet.
+  Table 2. Parameter Setting
 </p>
 
+We employed the Adam optimizer with an initial learning rate of 0.001, which gradually decayed as training progressed.
 
-#### Task 2: Filling in the Detection Head
-You should fill in one blank in file [src/model/head.py](src/model/head.py).
+### 2.3 Experimental Results
 
-#### Task 3: Filling in the Network
-You should fill in three blanks in file [src/model/hkudetector.py](src/model/hkudetector.py).
+We conducted experiments on the parameter settings mentioned above, aiming to improve the object detection performance. In this sections, we will present the detailed training configurations and results of these variations.
 
-#### Task 4: Filling in the Object Detection Loss Function
-You should fill in three blanks to complete object detection loss in file [src/utils/loss.py](src/utils/loss.py).
-The object detection loss includes five terms as following (which is Equation (3) in [YOLO v1](https://arxiv.org/abs/1506.02640)).
-You are required to complete two terms of them.
+During training, we recorded the loss curve below(ls: image size, bs: batch size):
 
-  $$\begin{aligned}
-  loss&=\lambda_{\text {coord }} \sum_{i=0}^{S^{2}} \sum_{j=0}^{B} \mathbb{1}_{i j}^{\text {obj }}\left[\left(x_{i}-\hat{x}_{i}\right)^{2}+\left(y_{i}-\hat{y}_{i}\right)^{2}\right]+\lambda_{\text {coord }} \sum_{i=0}^{S^{2}} \sum_{j=0}^{B} \mathbb{1}_{i j}^{\text {obj }}\left[\left(\sqrt{w_{i}}-\sqrt{\hat{w}_{i}}\right)^{2}+\left(\sqrt{h_{i}}-\sqrt{\hat{h}_{i}}\right)^{2}\right] \\
-  &+\sum_{i=0}^{S^{2}} \sum_{j=0}^{B} \mathbb{1}_{i j}^{\mathrm{obj}}\left(C_{i}-\hat{C}_{i}\right)^{2}+\lambda_{\text {noobj }} \sum_{i=0}^{S^{2}} \sum_{j=0}^{B} \mathbb{1}_{i j}^{\text {noobj }}\left(C_{i}-\hat{C}_{i}\right)^{2} \\
-  &+\sum_{i=0}^{S^{2}} \mathbb{1}_{i}^{\text {obj }} \sum_{c \in \text { classes }}\left(p_{i}(c)-\hat{p}_{i}(c)\right)^{2}
-  \end{aligned}$$
+<!-- ![image](resources/image.png) -->
+<div align="center">
+  <img src="./resources/table1.jpg" height="300">
+</div>
+<p align="center">
+  Figure 1. Loss Curve (ls=448, bs=12).
+</p>
 
-To help you better understand and implement the loss function, we can split this equation into four parts. You will find it helpful when you do the task 4.
-- The first two terms forms the location loss,
-+ The third term is the IOU loss for boxes containing the objects,
-- The fourth term represents the loss for boxes not containing the objects (Not IOU or No Objects),
-+ And the last term is the classification loss.
+<!-- ![image](resources/image.png) -->
+<div align="center">
+  <img src="./resources/table1.jpg" height="300">
+</div>
+<p align="center">
+  Figure 1. Loss Curve(ls=448, bs=32).
+</p>
 
-**Hint: In implementation, the fourth term is split into two part: (Part I) Not response loss: for the box containing the object but not the one with the maximum iou; (Part II) No onject loss: for the box not containing objects.**
+<!-- ![image](resources/image.png) -->
+<div align="center">
+  <img src="./resources/table1.jpg" height="300">
+</div>
+<p align="center">
+  Figure 2. Distribution of Classes in Training and Validation Sets.
+</p>
 
-#### Task 5: Filling in the Training Pipeline
-We have implemented dataset preprocessing codes for you. We strongly suggest you to read the [src/data/dataset.py](src/data/dataset.py) carefully before completing the following tasks.
-You should fill in two blanks to complete the training pipline in file [src/train.py](src/train.py).
+<!-- ![image](resources/image.png) -->
+<div align="center">
+  <img src="./resources/table1.jpg" height="300">
+</div>
+<p align="center">
+  Figure 3. Loss Curve(ls=512, bs=12).
+</p>
 
-After completing the training pipeline, you can run with the following command.
-```bash
-python train.py --output_dir 'checkpoints'
-```
+<!-- ![image](resources/image.png) -->
+<div align="center">
+  <img src="./resources/table1.jpg" height="300">
+</div>
+<p align="center">
+  Figure 4. Loss Curve(ls=640, bs=12).
+</p>
 
-#### Task 6: Filling in the Prediction Pipeline and Non-Maximum Suppression 
-You should fill in two blanks to complete the prediction pipeline and the NMS in the file [src/utils/util.py](src/utils/util.py).
-Non Maximum Suppression is a computer vision method to select a single entity from many overlapping entities. For more details, refer to [nms algorithm](https://learnopencv.com/non-maximum-suppression-theory-and-implementation-in-pytorch/).
+From the loss curve, we observed some trends:
 
-After completing the inference pipeline, you can run in the following command. The visualization result will be saved in vis_results folder. And you should show some of your results in the final report.
-```bash
-python predict.py --image_path "./ass1_dataset/test/image/000001.jpg" --vis_dir "./vis_results"
-```
+1.	Initially, the model's performance metrics changed rapidly, but as training progressed, the changes slowed down, eventually converging. This may be because the model learned some basic features in the early epochs and more fine-grained features in later epochs.
 
-#### Task 7: Filling in the Evaluation Pipeline (To Understand mAP)
-You should fill in one blank to complete the mAP calculation in file [src/eval.py](src/eval.py).
-The mAP is one of the most essential evaluation metrics in object detection. For more details, refer to [mAP calculation](https://jonathan-hui.medium.com/map-mean-average-precision-for-object-detection-45c121a31173).
+2.	We found that the model trained for 24 epochs was slightly underfitting. However, after 48 epochs, the performance metrics reached a relatively stable level, indicating that the model had learned enough features from the training data.
 
-After completing the evaluation pipeline, you can run in the following command. **IMPORTANT: You should submit the result.pkl generated in this part. (Submission details are illustrated in Sec 3.1)**
-```bash
-python eval.py --split 'test' --output_file "./result.pkl"
-```
+3.	We found that the model's performance metrics gradually converged during training but exhibited some jitter to some extent. We attributed this to the noise and randomness in the training data.
 
-**Hint: please pay attention to the threshold set in the evaluation pipeline. We suggest setting** *pos_threshold=0.1*, **and we will perform lower truncation on** *pos_threshold* **(that is, all** *pos_threshold<0.1* **will be truncated to** *0.1*)
+We trained multiple models with different configurations and evaluated their performance using mAP. Results are presented in the following table.
 
-### 2.2 Submitting the Model Outputs of the Test Data
-You should train your model on the **train+val** part, and you should generate and submit the outputs of the test part with your trained detection model.
-**The test part is released [here](https://drive.google.com/file/d/1-I1Rp1VrF4S5hx9_X3MUL50C10Ph1Tqe/view)**, and you can download using the [src/data/download_test.sh](src/data/download_test.sh).
+<!-- ![image](resources/image.png) -->
+<div align="center">
+  <img src="./resources/table1.jpg" height="300">
+</div>
+<p align="center">
+  Table 3. Resnet 50 under different parameter setting.
+</p>
 
-```bash
-cd src
-chmod +x data/download_test.sh
-./data/download_test.sh
-```
+<div align="center">
+  
+|            | Image size = 640 |
+|------------|------------------|
+| Batch size |     12   |   32   |
+| Epoch=24   |  0.50    | 0.49   |
+  
+</div>
 
-You can generate the final result using the following command. **Please specify the image size here if you change it to a larger scale.**
+<p align="center">
+  Table 4. Resnet 101 under different parameter setting
+</p>
 
-```bash
-python for_submit.py --split 'test' --output_file "./result.pkl" --model_path <your best ckpt file> --image_size <your image size>
-```
+<!-- ![image](resources/image.png) -->
+<div align="center">
+  <img src="./resources/table1.jpg" height="300">
+</div>
+<p align="center">
+  Figure 5. Effect of Batch Size and Image Size on mAP: A Side-by-Side Comparison.
+</p>
 
-#### Task 8: Improving the Detection Performance
-In this task, you should try different techniques to improve the detection performance, such as using grid search for the proper hyperparameters, modifying data preprocessing methods, changing the batch size, replacing the optimizer and so on. You should generate the prediction outputs with the trained detection model on the test data. The output organization should follow the form in the next Section.
+<!-- ![image](resources/image.png) -->
+<div align="center">
+  <img src="./resources/table1.jpg" height="300">
+</div>
+<p align="center">
+  Figure 6. Longitudinal Comparison of Epochs on mAP.
+</p>
 
-#### *Bonus Task (10% more beyond full mark): Improving the Detection Performance with More Advanced Architecture*
-*You are encouraged to explore and implement more advanced network architectures on this task. If you have any tries on this part, you should submit all your codes, model output, and the report to explain your understanding about how to improve the detection performance with more advanced architecture. (You should explain why these improvements can enhance the performance in your own words instead of just cloning some codes and performing inference.)* Bonus score will be given based on your overall contributions on these three parts.
+From the chart, it can be observed that: 
 
-### 2.3 Submitting the Reports
+1.	Increasing epoch numbers can improve mAP value, with the effect varying by image size and batch size. A limited improvement was observed when increasing epoch numbers from 24 to 48 for 448x448 and 512x512 image sizes, while a more significant improvement was observed for 640x640 images.
+	
+2.	Batch size had a minor effect on accuracy, with only slight differences observed between different image sizes. For the 448x448 image size, increasing batch size slightly decreased accuracy, while for the 512x512 and 640x640 image sizes, accuracy remained relatively stable.
+  
+3.	Image size was positively correlated with mAP value, indicating that increasing image size provides more detailed information about the image, leading to improved performance. The mAP value increased from 0.40 to 0.43 as image size increased from 448 to 512, with a further increase to 640 resulting in a more significant improvement, reaching 0.48.
+	
+4.	Network architecture played a crucial role in determining model performance. Resnet101 outperformed Resnet50 for the same parameters, with the highest mAP value of 0.50 obtained with Resnet101 for an image size of 640 and batch size of 12, while the mAP value for Resnet50 was 0.49.
 
-#### Task 9: Explaining the Efforts to Improve the Detection Performance in Experiment Report
-You should submit a experiment report to describe how you take efforts to improve the object detection performance.
-You should also provide the loss curve of your training procedure and figure out when the model converges in the curve.
-You can further explain whether training epoch and batch size affect the result in this report.
+### 2.4 Experimental Discussion
 
+Our experiments demonstrate that the model learns basic features first and more complex features later, emphasizing the importance of adequate training epochs. We found that the model's performance was slightly underfitting at 24 epochs, but stable at 48 epochs, highlighting the need to balance underfitting and overfitting.
 
-## 3. Submission Forms and Score Scheme
+We noted that the dataset contains many small objects, making them difficult to detect with down-sampled images of 448. Increasing the image size to 640 improved the model's performance by preserving more details, although we should consider that it also increases model complexity and training difficulty. Our experiment identified an optimal image size of 640, providing valuable insights for future studies.
 
-### 3.1 Submission File Forms
+Increasing the batch size can potentially increase training efficiency but may introduce noise and negatively impact accuracy. Additionally, larger batch sizes may require more memory and computational resources, negatively impacting training speed.
 
-The submission files should follow the specific organized forms as following. Since TAs have to rerun your code on another test dataset, marks will be **deducted** (multiplied by 80%) if your code cannot be run because your submission of code does not follow our specified instructions. TAs may contact you to solve related problems.
+Our experiment also showed that Resnet101 outperformed Resnet50 in terms of mAP for all parameter settings. However, this performance gain comes at the cost of increased computational complexity and training time. Thus, the choice of architecture should be based on the tradeoff between performance and computational resources.
 
-```
-└── uid_name_assignment_1 # Your submission file name.  
-    ├── src               # The completed source codes corresponding to Sec. 2.1. You should keep the same organization with the original file structure.
-    ├── bonus1_src        # The source codes for more advanced architecture if there are any.
-    ├── outputs           # Your model outputs on test data. 
-    │   ├── result.pkl      # It will be generated automatically in src/eval.py. Please follow the format in source code. 
-    │   ├── bonus1.pkl      # The results of your more advanced implementation if there are any.
-    │   ├── bonus2.pkl      
-    │   └── ...               
-    └── report.pdf        # Combine the experiment analysis report and the survey analysis report in one pdf file.
-```
+### 2.5 Experimental Presentation
 
-### 3.2 Score Scheme
-The final score of the assignment is composed of four parts: (1) the codebase you complete (30%); (2) the detection performance (50%); (3) the experiment analysis report (20%).
+Based on the conducted experiment, the final object detection results are presented in the below Figure, which demonstrates a high detection performance. The detection algorithm successfully identified pedestrians and bicycles that are not easily discernible by the human eye. The results also showed robust detection performance in low-light conditions during the night.
 
-1. For the completed codebase (30%): The mark will be given mainly based on completeness under the requirements.
+<!-- ![image](resources/image.png) -->
+<div align="center">
+  <img src="./resources/table1.jpg" height="300">
+</div>
+<p align="center">
+  Figure 7. Visualization of Experimental Detection Results.
+</p>
 
-2. For the performance part (50%): TA will rerun your code on another test dataset (same distribution as training set and verification set) and give your marks based on the mAP of your model.
-- mAP larger than 42% will get the full mark of this part.
-- mAP between 38% and 42% will get 90% mark of this part.
-- mAP between 34% and 38% will get 80% mark of this part.
-- mAP between 30% and 34% will get 70% mark of this part.
-- mAP between 26% and 30% will get 60% mark of this part.
-- mAP larger than 0.2% will get 50% mark of this part.
-- Others will get 0% mark.
+The achieved detection performance can be attributed to the use of advanced object detection algorithms and techniques, which enables accurate object recognition and localization in complex scenes and challenging lighting conditions.
 
-3. For the experiment analysis report (20%).
-The marks will be given mainly based on the richness of the experiments & analysis.
-- Rich experiments + detailed analysis: 90%-100% mark of this part.
-- Reasonable number of experiments + analysis: 70%-80% mark of this part.
-- Basic analysis: 50%-60% mark of this part.
-- Not sufficient analysis: lower than 50%.
+## 3. Conclusion
 
-
-4. $\text{Final mark} = min\lbrace 100, (\text{sum of the THREE parts} + \text{bonus mark})\rbrace$
+In summary, our study investigated techniques to improve the detection performance of an autonomous driving detection system. Our experiments highlighted the superiority of ResNet101 over ResNet50 and the significant impact of image size on mean average precision. We also found that selecting appropriate batch sizes is crucial for balancing time and performance. Our study provides valuable guidance for the study and practice of autonomous driving, emphasizing the importance of balancing underfitting and overfitting while considering the tradeoff between performance and computational resources. Further exploration of other factors affecting object detection performance is necessary to propose more efficient and accurate system design methods.
 
 
-## 4. Working on the Environment
-
-### 4.1 Working on the HKU GPU
-You had better know the following things
-- ssh remotely
-- anaconda
-- install pytorch and torchvision with corresponding cuda
-- install packages with pypi
-- use git for version control
-
-### 4.2 Environment Setup
-
-Standard codes have been tested with the following settings. It's just a reference for you, and there is no need for you to run in the completely same environment. 
-- python 3.8
-- pytorch 1.9.1 (cuda 11.1)
-- torchvision 0.10.1 (cuda 11.1)
-- numpy
-- scipy
-- tqdm
-- opencv-python
-
-## 5. Important Date
-
-- Assignment 1 Release: Jan 30 (Mon)
-- Test Data Release: Feb 24 (Fri) (**Released [Here](https://drive.google.com/file/d/1-I1Rp1VrF4S5hx9_X3MUL50C10Ph1Tqe/view)**)
-- Submission Deadline: Mar 10 (Fri)
-
-### Late submission policy:
-- 10% for late assignments submitted within 1 day late.
-- 20% for late assignments submitted within 2 days late.
-- 50% for late assignments submitted within 7 days (Mar 17) late.
-- 100% for late assignments submitted after 7 days (Mar 17) late.
-
-## 6. Contact
-Any question, please contact liangzx@connect.hku.hk or yuhaibao@connect.hk.hk.
+## References:
+[1]	X. Xie et al., "Dense Convolutional Network Combined with YOLOv2 for Vehicle Detection in Aerial Images," Remote Sensing, vol. 10, no. 12, 2018.
+[2]	S. Kim et al., "Improving the Performance of Object Detection Systems for Autonomous Vehicles Using Deep Learning," Electronics, vol. 10, no. 2, 2021.
