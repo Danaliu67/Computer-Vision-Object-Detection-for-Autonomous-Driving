@@ -53,7 +53,7 @@ During training, we recorded the loss curve below(ls: image size, bs: batch size
 
 <!-- ![image](resources/image.png) -->
 <div align="center">
-  <img src="./resources/table1.jpg" height="300">
+  <img src="./resources/figure1.jpg" height="300">
 </div>
 <p align="center">
   Figure 1. Loss Curve (ls=448, bs=12).
@@ -61,15 +61,7 @@ During training, we recorded the loss curve below(ls: image size, bs: batch size
 
 <!-- ![image](resources/image.png) -->
 <div align="center">
-  <img src="./resources/table1.jpg" height="300">
-</div>
-<p align="center">
-  Figure 1. Loss Curve(ls=448, bs=32).
-</p>
-
-<!-- ![image](resources/image.png) -->
-<div align="center">
-  <img src="./resources/table1.jpg" height="300">
+  <img src="./resources/figure2.jpg" height="300">
 </div>
 <p align="center">
   Figure 2. Distribution of Classes in Training and Validation Sets.
@@ -77,7 +69,7 @@ During training, we recorded the loss curve below(ls: image size, bs: batch size
 
 <!-- ![image](resources/image.png) -->
 <div align="center">
-  <img src="./resources/table1.jpg" height="300">
+  <img src="./resources/figure3.jpg" height="300">
 </div>
 <p align="center">
   Figure 3. Loss Curve(ls=512, bs=12).
@@ -85,7 +77,7 @@ During training, we recorded the loss curve below(ls: image size, bs: batch size
 
 <!-- ![image](resources/image.png) -->
 <div align="center">
-  <img src="./resources/table1.jpg" height="300">
+  <img src="./resources/figure4.jpg" height="300">
 </div>
 <p align="center">
   Figure 4. Loss Curve(ls=640, bs=12).
@@ -103,7 +95,7 @@ We trained multiple models with different configurations and evaluated their per
 
 <!-- ![image](resources/image.png) -->
 <div align="center">
-  <img src="./resources/table1.jpg" height="300">
+  <img src="./resources/table3.jpg" height="300">
 </div>
 <p align="center">
   Table 3. Resnet 50 under different parameter setting.
@@ -124,7 +116,7 @@ We trained multiple models with different configurations and evaluated their per
 
 <!-- ![image](resources/image.png) -->
 <div align="center">
-  <img src="./resources/table1.jpg" height="300">
+  <img src="./resources/figure5.jpg" height="300">
 </div>
 <p align="center">
   Figure 5. Effect of Batch Size and Image Size on mAP: A Side-by-Side Comparison.
@@ -132,7 +124,7 @@ We trained multiple models with different configurations and evaluated their per
 
 <!-- ![image](resources/image.png) -->
 <div align="center">
-  <img src="./resources/table1.jpg" height="300">
+  <img src="./resources/figure6.jpg" height="300">
 </div>
 <p align="center">
   Figure 6. Longitudinal Comparison of Epochs on mAP.
@@ -164,7 +156,7 @@ Based on the conducted experiment, the final object detection results are presen
 
 <!-- ![image](resources/image.png) -->
 <div align="center">
-  <img src="./resources/table1.jpg" height="300">
+  <img src="./resources/figure7.jpg" height="300">
 </div>
 <p align="center">
   Figure 7. Visualization of Experimental Detection Results.
