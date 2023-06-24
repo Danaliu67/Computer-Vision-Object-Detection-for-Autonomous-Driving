@@ -14,7 +14,7 @@ This 2D image dataset for autonomous driving object detection is created by HUAW
 
 <!-- ![image](resources/image.png) -->
 <div align="center">
-  <img src="./resources/table1.jpg" height="300">
+  <img src="../resources/figure1.png" height="300">
 </div>
 <p align="center">
   Table 1. Distribution of Classes in Training and Validation Sets.
